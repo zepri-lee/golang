@@ -6,4 +6,4 @@ var DbUser = "sa"
 var DbPassword = "leehi357!@"
 var DbName = "master"
 
-var PORT = ":8080"
+var PORT = ":9090"
