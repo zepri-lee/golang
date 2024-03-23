@@ -10,7 +10,7 @@ import (
 )
 
 func GetStock(ctx *gin.Context) {
-	//stocks := new([]models.Stock)
+	//	stocks := new([]models.Stock)
 	var stocks []models.Stock
 	//	location := ctx.Param("location") // http://~~~~/:location
 	location := ctx.Query("location")
@@ -48,7 +48,7 @@ func GetStock(ctx *gin.Context) {
 	// location은 기본조건이고 나머지는 filter조건
 	futureQuery := commonQuery()
 	if productName != "" {
-		futureQuery = futureQuery.Where("PRODUCTNAME  = ?", productName)
+		futureQuery = futureQuery.Where("PRODUCT_NAME  = ?", productName)
 	}
 	if frQty != "" && toQty != "" {
 		futureQuery = futureQuery.Where("STOCK_QUANTITY BETWEEN ? AND ?", frQty, toQty)
@@ -77,13 +77,9 @@ func GetStock(ctx *gin.Context) {
 }
 
 func AddStock(ctx *gin.Context) {
+
 	var stocks []models.Stock
-
-	type STOCK_COUNT struct {
-		STOCK_COUNT uint
-	}
-
-	var stock_count STOCK_COUNT
+	var stock_count int = 0
 
 	if err := ctx.ShouldBindJSON(&stocks); err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -96,7 +92,7 @@ func AddStock(ctx *gin.Context) {
 	// 존재하면 업데이트(QUANTITY 증가), 존재하지 않으면 인서트
 	for _, stock := range stocks {
 		if err := database.Instance.Select("COUNT(*) AS STOCK_COUNT").Table("STOCK").
-			Where("PRODUCT_ID = ?", stock.Product_ID).Find(&stock_count).Error; err != nil {
+			Where("PRODUCT_ID = ?", stock.PRODUCT_ID).Find(&stock_count).Error; err != nil {
 
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"message": err.Error(),
@@ -105,7 +101,7 @@ func AddStock(ctx *gin.Context) {
 			return
 		}
 
-		if stock_count.STOCK_COUNT == 0 {
+		if stock_count == 0 {
 			if err := database.Instance.Table("STOCK").Create(&stock).Error; err != nil {
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 					"message": err.Error(),
@@ -119,7 +115,7 @@ func AddStock(ctx *gin.Context) {
 					 SET STOCK_QUANTITY = STOCK_QUANTITY + ?
 					 WHERE PRODUCT_ID = ?`
 
-			err := database.Instance.Exec(query, stock.Stock_Quantity, stock.Product_ID).Error
+			err := database.Instance.Exec(query, stock.STOCK_QUANTITY, stock.PRODUCT_ID).Error
 			if err != nil {
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 					"message": err.Error(),
