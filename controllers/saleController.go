@@ -137,7 +137,7 @@ func AddStock(ctx *gin.Context) {
 		}
 	}
 
-	ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"message": "OK",
 	})
 	/*
@@ -161,7 +161,7 @@ func DeleteAllStock(ctx *gin.Context) {
 			"message": err.Error(),
 		})
 	} else {
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+		ctx.JSON(http.StatusOK, gin.H{
 			"message": "OK",
 		})
 	}
