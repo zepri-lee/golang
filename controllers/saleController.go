@@ -177,20 +177,6 @@ func AddStock(ctx *gin.Context) {
 	*/
 }
 
-// 테스트용 전제 삭제
-func DeleteAllStock(ctx *gin.Context) {
-
-	if err := database.Instance.Exec("DELETE FROM STOCK").Error; err != nil {
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
-	} else {
-		ctx.JSON(http.StatusOK, gin.H{
-			"message": "OK",
-		})
-	}
-}
-
 /******************************************************************************************************
 * 판매정보 등록
 * 1. 재고체크 => 미존재시 오류, 재고부족
@@ -287,4 +273,52 @@ func AddSale(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "OK",
 	})
+}
+
+// ID로 재고 삭제 (Get request 방식)
+func DeleteStockById(ctx *gin.Context) {
+	//	productId := ctx.Param("productId")
+	productId := ctx.Query("productId")
+
+	if err := database.Instance.Table("STOCK").Unscoped().Where("PRODUCT_ID = ?", productId).Delete(&models.Stock{}).Error; err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "OK",
+	})
+}
+
+// ID로 재고 삭제 (uri 셋팅방식)
+func DeleteStockById2(ctx *gin.Context) {
+	productId := ctx.Param("productId")
+	//	productId := ctx.Query("productId")
+
+	if err := database.Instance.Table("STOCK").Unscoped().Where("PRODUCT_ID = ?", productId).Delete(&models.Stock{}).Error; err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "OK",
+	})
+}
+
+// 테스트용 전제 삭제
+func DeleteAllStock(ctx *gin.Context) {
+
+	if err := database.Instance.Exec("DELETE FROM STOCK").Error; err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+	} else {
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "OK",
+		})
+	}
 }

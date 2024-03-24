@@ -15,7 +15,9 @@ func InitRoute(app *gin.Engine) {
 	{
 		api.GET("/stock", controllers.GetStock)
 		api.POST("/stock", controllers.AddStock)
-		api.DELETE("/stock", controllers.DeleteAllStock)
+		api.DELETE("/stockAll", controllers.DeleteAllStock)
+		api.DELETE("/stockById", controllers.DeleteStockById)
+		api.DELETE("/stockById2/:productId", controllers.DeleteStockById2)
 		api.POST("/sale", controllers.AddSale)
 	}
 }
