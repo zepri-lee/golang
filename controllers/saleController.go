@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"gin-gonic-gorm/database"
 	"gin-gonic-gorm/models"
 	"net/http"
@@ -279,7 +280,25 @@ func AddSale(ctx *gin.Context) {
 func DeleteStockById(ctx *gin.Context) {
 	//	productId := ctx.Param("productId")
 	productId := ctx.Query("productId")
+	var stocks models.Stock
 
+	// 재고 존재유무 체크
+	errFirst := database.Instance.Table("STOCK").Where("PRODUCT_ID = ?", productId).First(&stocks).Error
+
+	if errors.Is(errFirst, gorm.ErrRecordNotFound) {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "재고 미존재",
+		})
+		return
+	}
+	if errFirst != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": errFirst.Error(),
+		})
+		return
+	}
+
+	// 삭제
 	if err := database.Instance.Table("STOCK").Unscoped().Where("PRODUCT_ID = ?", productId).Delete(&models.Stock{}).Error; err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
@@ -296,7 +315,25 @@ func DeleteStockById(ctx *gin.Context) {
 func DeleteStockById2(ctx *gin.Context) {
 	productId := ctx.Param("productId")
 	//	productId := ctx.Query("productId")
+	var stocks models.Stock
 
+	// 재고 존재유무 체크
+	errFirst := database.Instance.Table("STOCK").Where("PRODUCT_ID = ?", productId).First(&stocks).Error
+
+	if errors.Is(errFirst, gorm.ErrRecordNotFound) {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "재고 미존재",
+		})
+		return
+	}
+	if errFirst != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": errFirst.Error(),
+		})
+		return
+	}
+
+	// 삭제
 	if err := database.Instance.Table("STOCK").Unscoped().Where("PRODUCT_ID = ?", productId).Delete(&models.Stock{}).Error; err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
