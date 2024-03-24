@@ -5,6 +5,7 @@ import (
 	"gin-gonic-gorm/database"
 	"gin-gonic-gorm/models"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -358,4 +359,55 @@ func DeleteAllStock(ctx *gin.Context) {
 			"message": "OK",
 		})
 	}
+}
+
+/******************************************************************************************************
+* 재고정보 조회 (Paging)
+*******************************************************************************************************/
+func GetStockPaging(ctx *gin.Context) {
+	var stocks []models.Stock
+	location := ctx.Query("location")
+	page := ctx.Query("page")
+	limit := ctx.Query("limit")
+
+	if page == "" {
+		page = "1"
+	}
+
+	if limit == "" {
+		limit = "10"
+	}
+
+	pageInt, _ := strconv.Atoi(page)
+	limitInt, _ := strconv.Atoi(limit)
+	if pageInt < 1 {
+		pageInt = 1
+	}
+	offset := (pageInt - 1) * limitInt
+
+	// location 제약 조건 체크
+	if location == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "STOCK Location을 입력바랍니다.",
+		})
+
+		return
+	}
+
+	// 데이터 조회
+	if err := database.Instance.Table("STOCK").Where("STOCK_LOCATION = ?", location).
+		Offset(offset).Limit(limitInt).Find(&stocks).Error; err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	// 정상조회
+	ctx.JSON(http.StatusOK, gin.H{
+		"data":    stocks,
+		"offSet":  pageInt,
+		"perPage": limitInt,
+	})
 }
