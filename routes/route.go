@@ -8,11 +8,11 @@ import (
 
 func InitRoute(app *gin.Engine) {
 
-	strApi := "/api"
-	route := app
-
-	route.GET(strApi+"/stock", controller.GetStock)
-	route.POST(strApi+"/stock", controller.AddStock)
-	route.DELETE(strApi+"/stock", controller.DeleteAllStock)
-	route.POST(strApi+"/sale", controller.AddSale)
+	api := app.Group("/api")
+	{
+		api.GET("/stock", controller.GetStock)
+		api.POST("/stock", controller.AddStock)
+		api.DELETE("/stock", controller.DeleteAllStock)
+		api.POST("/sale", controller.AddSale)
+	}
 }
