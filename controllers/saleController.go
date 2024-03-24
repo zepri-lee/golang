@@ -54,6 +54,19 @@ func GetStock(ctx *gin.Context) {
 	if frQty != "" && toQty != "" {
 		futureQuery = futureQuery.Where("STOCK_QUANTITY BETWEEN ? AND ?", frQty, toQty)
 	}
+	// 재고정보 체크
+	//	if err := futureQuery.First(&stocks).Error; err != nil {
+	//		// 데이터 미존재
+	//		if errors.Is(err, gorm.ErrRecordNotFound) {
+	//			ctx.JSON(http.StatusOK, gin.H{
+	//				"message": "재고정보 미존재1",
+	//			})
+	//		}
+	//
+	//		return
+	//	}
+
+	// 데이터 조회
 	if err := futureQuery.Scan(&stocks).Error; err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
@@ -65,7 +78,7 @@ func GetStock(ctx *gin.Context) {
 	// 데이터 존재여부 체크
 	if len(stocks) == 0 {
 		ctx.JSON(http.StatusOK, gin.H{
-			"message": "데이터 미존재",
+			"message": "재고정보 미존재2",
 		})
 
 		return
