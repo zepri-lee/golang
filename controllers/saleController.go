@@ -4,6 +4,7 @@ import (
 	"gin-gonic-gorm/database"
 	"gin-gonic-gorm/models"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -81,6 +82,7 @@ func AddStock(ctx *gin.Context) {
 	var stocks []models.Stock
 	var stock_count int = 0
 
+	// 파라미터 바인딩
 	if err := ctx.ShouldBindJSON(&stocks); err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
@@ -168,7 +170,95 @@ func DeleteAllStock(ctx *gin.Context) {
 }
 
 func AddSale(ctx *gin.Context) {
-	ctx.JSON(200, gin.H{
-		"hello": "AddSale",
+	// 1. 재고체크 => 미존재시 오류, 재고부족
+	// 2. 판매등록
+	// 3. 재고차감
+	var sale models.Sale
+	var stock_qunatity int = 0
+	var stock_count int = 0
+
+	tx := database.Instance.Begin()
+	if tx.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "transaction start failed",
+		})
+		return
+	}
+
+	// 파라미터 바인딩
+	if err := ctx.ShouldBindJSON(&sale); err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	// 판매일자
+	sale.SALE_DATE = time.Now()
+
+	// 재고체크 => 미존재
+	if err := tx.Select("COUNT(*)").Table("STOCK").
+		Where("PRODUCT_ID = ?", sale.PRODUCT_ID).Find(&stock_count).Error; err != nil {
+
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	if stock_count == 0 {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "상품이 재고정보에 등록되어 있지 않습니다.",
+		})
+
+		return
+	}
+
+	// 재고체크 => 재고부족
+	if err := tx.Select("ISNULL(STOCK_QUANTITY, 0)").Table("STOCK").
+		Where("PRODUCT_ID = ?", sale.PRODUCT_ID).Find(&stock_qunatity).Error; err != nil {
+
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	if stock_qunatity <= sale.SALE_COUNT {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "상품의 재고정보가 부족합니다.",
+		})
+
+		return
+	}
+
+	// 재고 차감
+	query := `UPDATE STOCK
+			 SET STOCK_QUANTITY = STOCK_QUANTITY - ?
+			 WHERE PRODUCT_ID = ?`
+
+	if err := tx.Exec(query, sale.SALE_COUNT, sale.PRODUCT_ID).Error; err != nil {
+		tx.Rollback()
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 판매등록
+	if err := tx.Table("SALE").Create(&sale).Error; err != nil {
+		tx.Rollback()
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	tx.Commit()
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "OK",
 	})
 }
