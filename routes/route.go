@@ -10,6 +10,7 @@ import (
 
 func InitRoute(app *gin.Engine) {
 	app.Use(corsConfig())
+	app.Static("/public", "./public")
 
 	api := app.Group("/api")
 	{

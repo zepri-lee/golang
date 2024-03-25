@@ -1,7 +1,7 @@
 @host = localhost:9090
 
 // GetStock 테스트
-//GET http://{{host}}/api/stock?location=A HTTP/1.1
+GET http://{{host}}/api/stock?location=A HTTP/1.1
 //GET http://{{host}}/api/stock?location=A&productName=배 HTTP/1.1
 //GET http://{{host}}/api/stock?location=A&productName=배&frQty=1&toQty=15 HTTP/1.1
 
