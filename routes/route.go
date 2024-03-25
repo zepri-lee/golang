@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"gin-gonic-gorm/config"
 	"gin-gonic-gorm/controllers"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 
 func InitRoute(app *gin.Engine) {
 	app.Use(corsConfig())
-	app.Static("/public", "./public")
+	app.Static(config.STATIC_ROUTE, config.STATIC_DIR)
 
 	api := app.Group("/api")
 	{
@@ -21,6 +22,8 @@ func InitRoute(app *gin.Engine) {
 		api.DELETE("/stockAll", controllers.DeleteAllStock)
 		api.DELETE("/stockById", controllers.DeleteStockById)
 		api.DELETE("/stockById2/:productId", controllers.DeleteStockById2)
+
+		api.POST("/file", controllers.HandleUploadFile)
 	}
 }
 
