@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
 	"gin-gonic-gorm/database"
 	"gin-gonic-gorm/models"
 	"net/http"
@@ -49,7 +48,7 @@ func GetStock(ctx *gin.Context) {
 	// Define the common part of the query
 	commonQuery := func() *gorm.DB {
 		return database.Instance.
-			Table("STOCK").
+			Table("stocks").
 			Where("STOCK_LOCATION = ?", location)
 	}
 
@@ -82,8 +81,6 @@ func GetStock(ctx *gin.Context) {
 
 		return
 	}
-
-	fmt.Println(stocks)
 
 	// 데이터 존재여부 체크
 	if len(stocks) == 0 {
@@ -120,8 +117,8 @@ func AddStock(ctx *gin.Context) {
 
 	// 존재하면 업데이트(QUANTITY 증가), 존재하지 않으면 인서트
 	for _, stock := range stocks {
-		if err := database.Instance.Select("COUNT(*) AS STOCK_COUNT").Table("STOCK").
-			Where("PRODUCT_ID = ?", stock.ProductID).Find(&stock_count).Error; err != nil {
+		if err := database.Instance.Select("COUNT(*) AS STOCK_COUNT").Table("stocks").
+			Where("PRODUCT_ID = ?", stock.ProductID).Debug().Find(&stock_count).Error; err != nil {
 
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"message": err.Error(),
@@ -131,7 +128,7 @@ func AddStock(ctx *gin.Context) {
 		}
 
 		if stock_count == 0 {
-			if err := database.Instance.Table("STOCK").Create(&stock).Error; err != nil {
+			if err := database.Instance.Table("stocks").Create(&stock).Error; err != nil {
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 					"message": err.Error(),
 				})
@@ -140,7 +137,7 @@ func AddStock(ctx *gin.Context) {
 				return
 			}
 		} else {
-			query := `UPDATE STOCK
+			query := `UPDATE stocks
 					 SET STOCK_QUANTITY = STOCK_QUANTITY + ?
 					 WHERE PRODUCT_ID = ?`
 
@@ -153,7 +150,7 @@ func AddStock(ctx *gin.Context) {
 				database.Instance.Rollback()
 				return
 			}
-			/* 			if err := database.Instance.Table("STOCK").Update("STOCK_QUANTITY", gorm.Expr("STOCK_QUANTITY + ?", stock.Stock_Quantity)).
+			/* 			if err := database.Instance.Table("stocks").Update("STOCK_QUANTITY", gorm.Expr("STOCK_QUANTITY + ?", stock.Stock_Quantity)).
 				Where("PRODUCT_ID = ?", stock.Product_ID).Error; err != nil {
 
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -170,7 +167,7 @@ func AddStock(ctx *gin.Context) {
 		"message": "OK",
 	})
 	/*
-		if err := database.Instance.Table("STOCK").CreateInBatches(&stocks, 10).Error; err != nil {
+		if err := database.Instance.Table("stocks").CreateInBatches(&stocks, 10).Error; err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"message": err.Error(),
 			})
@@ -215,8 +212,8 @@ func AddSale(ctx *gin.Context) {
 	sale.SaleDate = time.Now()
 
 	// 재고체크 => 미존재
-	if err := tx.Select("COUNT(*)").Table("STOCK").
-		Where("PRODUCT_ID = ?", sale.ProductID).Find(&stock_count).Error; err != nil {
+	if err := tx.Select("COUNT(*)").Table("stocks").
+		Where("PRODUCT_ID = ?", sale.ProductID).Debug().Find(&stock_count).Error; err != nil {
 
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
@@ -234,8 +231,8 @@ func AddSale(ctx *gin.Context) {
 	}
 
 	// 재고체크 => 재고부족
-	if err := tx.Select("ISNULL(STOCK_QUANTITY, 0)").Table("STOCK").
-		Where("PRODUCT_ID = ?", sale.ProductID).Find(&stock_qunatity).Error; err != nil {
+	if err := tx.Select("ISNULL(STOCK_QUANTITY, 0)").Table("stocks").
+		Where("PRODUCT_ID = ?", sale.ProductID).Debug().Find(&stock_qunatity).Error; err != nil {
 
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
@@ -253,7 +250,7 @@ func AddSale(ctx *gin.Context) {
 	}
 
 	// 재고 차감
-	query := `UPDATE STOCK
+	query := `UPDATE stocks
 			 SET STOCK_QUANTITY = STOCK_QUANTITY - ?
 			 WHERE PRODUCT_ID = ?`
 
@@ -266,7 +263,7 @@ func AddSale(ctx *gin.Context) {
 	}
 
 	// 판매등록
-	if err := tx.Table("SALE").Create(&sale).Error; err != nil {
+	if err := tx.Table("sales").Create(&sale).Error; err != nil {
 		tx.Rollback()
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
@@ -287,7 +284,7 @@ func DeleteStockById(ctx *gin.Context) {
 	var stocks models.Stock
 
 	// 재고 존재유무 체크
-	errFirst := database.Instance.Table("STOCK").Where("PRODUCT_ID = ?", productId).First(&stocks).Error
+	errFirst := database.Instance.Table("stocks").Where("PRODUCT_ID = ?", productId).Debug().First(&stocks).Error
 
 	if errors.Is(errFirst, gorm.ErrRecordNotFound) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -303,7 +300,7 @@ func DeleteStockById(ctx *gin.Context) {
 	}
 
 	// 삭제
-	if err := database.Instance.Table("STOCK").Unscoped().Where("PRODUCT_ID = ?", productId).Delete(&models.Stock{}).Error; err != nil {
+	if err := database.Instance.Table("stocks").Unscoped().Where("PRODUCT_ID = ?", productId).Delete(&models.Stock{}).Error; err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
@@ -322,7 +319,7 @@ func DeleteStockById2(ctx *gin.Context) {
 	var stocks models.Stock
 
 	// 재고 존재유무 체크
-	errFirst := database.Instance.Table("STOCK").Where("PRODUCT_ID = ?", productId).First(&stocks).Error
+	errFirst := database.Instance.Table("stocks").Where("PRODUCT_ID = ?", productId).Debug().First(&stocks).Error
 
 	if errors.Is(errFirst, gorm.ErrRecordNotFound) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -338,7 +335,7 @@ func DeleteStockById2(ctx *gin.Context) {
 	}
 
 	// 삭제
-	if err := database.Instance.Table("STOCK").Unscoped().Where("PRODUCT_ID = ?", productId).Delete(&models.Stock{}).Error; err != nil {
+	if err := database.Instance.Table("stocks").Unscoped().Where("PRODUCT_ID = ?", productId).Debug().Delete(&models.Stock{}).Error; err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
@@ -353,7 +350,7 @@ func DeleteStockById2(ctx *gin.Context) {
 // 테스트용 전제 삭제
 func DeleteAllStock(ctx *gin.Context) {
 
-	if err := database.Instance.Exec("DELETE FROM STOCK").Error; err != nil {
+	if err := database.Instance.Exec("DELETE FROM stocks").Error; err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
@@ -398,8 +395,8 @@ func GetStockPaging(ctx *gin.Context) {
 	}
 
 	// 데이터 조회
-	if err := database.Instance.Table("STOCK").Where("STOCK_LOCATION = ?", location).
-		Offset(offset).Limit(limitInt).Find(&stocks).Error; err != nil {
+	if err := database.Instance.Table("stocks").Where("STOCK_LOCATION = ?", location).
+		Offset(offset).Limit(limitInt).Debug().Find(&stocks).Error; err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
