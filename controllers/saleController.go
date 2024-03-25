@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"gin-gonic-gorm/database"
 	"gin-gonic-gorm/models"
 	"net/http"
@@ -74,13 +75,15 @@ func GetStock(ctx *gin.Context) {
 	//	}
 
 	// 데이터 조회
-	if err := futureQuery.Scan(&stocks).Error; err != nil {
+	if err := futureQuery.Debug().Scan(&stocks).Error; err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
 
 		return
 	}
+
+	fmt.Println(stocks)
 
 	// 데이터 존재여부 체크
 	if len(stocks) == 0 {
@@ -118,7 +121,7 @@ func AddStock(ctx *gin.Context) {
 	// 존재하면 업데이트(QUANTITY 증가), 존재하지 않으면 인서트
 	for _, stock := range stocks {
 		if err := database.Instance.Select("COUNT(*) AS STOCK_COUNT").Table("STOCK").
-			Where("PRODUCT_ID = ?", stock.PRODUCT_ID).Find(&stock_count).Error; err != nil {
+			Where("PRODUCT_ID = ?", stock.ProductID).Find(&stock_count).Error; err != nil {
 
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"message": err.Error(),
@@ -141,7 +144,7 @@ func AddStock(ctx *gin.Context) {
 					 SET STOCK_QUANTITY = STOCK_QUANTITY + ?
 					 WHERE PRODUCT_ID = ?`
 
-			err := database.Instance.Exec(query, stock.STOCK_QUANTITY, stock.PRODUCT_ID).Error
+			err := database.Instance.Exec(query, stock.StockQuantity, stock.ProductID).Error
 			if err != nil {
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 					"message": err.Error(),
@@ -209,11 +212,11 @@ func AddSale(ctx *gin.Context) {
 	}
 
 	// 판매일자
-	sale.SALE_DATE = time.Now()
+	sale.SaleDate = time.Now()
 
 	// 재고체크 => 미존재
 	if err := tx.Select("COUNT(*)").Table("STOCK").
-		Where("PRODUCT_ID = ?", sale.PRODUCT_ID).Find(&stock_count).Error; err != nil {
+		Where("PRODUCT_ID = ?", sale.ProductID).Find(&stock_count).Error; err != nil {
 
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
@@ -232,7 +235,7 @@ func AddSale(ctx *gin.Context) {
 
 	// 재고체크 => 재고부족
 	if err := tx.Select("ISNULL(STOCK_QUANTITY, 0)").Table("STOCK").
-		Where("PRODUCT_ID = ?", sale.PRODUCT_ID).Find(&stock_qunatity).Error; err != nil {
+		Where("PRODUCT_ID = ?", sale.ProductID).Find(&stock_qunatity).Error; err != nil {
 
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
@@ -241,7 +244,7 @@ func AddSale(ctx *gin.Context) {
 		return
 	}
 
-	if stock_qunatity <= sale.SALE_COUNT {
+	if stock_qunatity <= sale.SaleCount {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "상품의 재고정보가 부족합니다.",
 		})
@@ -254,7 +257,7 @@ func AddSale(ctx *gin.Context) {
 			 SET STOCK_QUANTITY = STOCK_QUANTITY - ?
 			 WHERE PRODUCT_ID = ?`
 
-	if err := tx.Exec(query, sale.SALE_COUNT, sale.PRODUCT_ID).Error; err != nil {
+	if err := tx.Exec(query, sale.SaleCount, sale.ProductID).Error; err != nil {
 		tx.Rollback()
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
