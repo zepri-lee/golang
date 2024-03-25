@@ -1,0 +1,51 @@
+@host = localhost:9090
+
+// GetStock 테스트
+//GET http://{{host}}/api/stock?location=A HTTP/1.1
+//GET http://{{host}}/api/stock?location=A&productName=배 HTTP/1.1
+//GET http://{{host}}/api/stock?location=A&productName=배&frQty=1&toQty=15 HTTP/1.1
+
+// AddSale 테스트
+# POST http://localhost:9090/api/stock HTTP/1.1
+
+# [
+#  {
+#    "productId": 1001,
+#    "productName": "사과",
+#    "quantity": 50,
+#    "location": "A"
+#  },
+#  {
+#    "productId": 1002,
+#    "productName": "지우개",
+#    "quantity": 20,
+#    "location": "B"
+#  },
+#  {
+#    "productID": 1003,
+#    "productName": "배",
+#    "quantity": 15,
+#    "location": "A"
+#  }
+# ]
+
+// AddSale 테스트
+# POST http://localhost:9090/api/sale HTTP/1.1
+
+# {
+#   "productId": 1001,
+#   "count": 2
+# }
+
+// GetStockPaging 테스트
+//GET http://localhost:9090/api/stockPaging?location=A&page=1&limit=1 HTTP/1.1
+
+// DeleteStockById2 테스트
+//DELETE http://localhost:9090/api/stockById?productId=1003 HTTP/1.1
+
+// DeleteStockById2 테스트
+//DELETE http://localhost:9090/api/stockById2/1001 HTTP/1.1
+
+// DeleteAllStock 테스트
+//DELETE http://localhost:9090/api/stockAll HTTP/1.1
+
