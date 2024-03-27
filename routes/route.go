@@ -3,6 +3,7 @@ package routes
 import (
 	"gin-gonic-gorm/config"
 	"gin-gonic-gorm/controllers"
+	"gin-gonic-gorm/middleware"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -13,7 +14,7 @@ func InitRoute(app *gin.Engine) {
 	app.Use(corsConfig())
 	app.Static(config.STATIC_ROUTE, config.STATIC_DIR)
 
-	api := app.Group("/api")
+	api := app.Group("/api", middleware.AuthMiddleware)
 	{
 		api.GET("/stock", controllers.GetStock)
 		api.GET("/stockPaging", controllers.GetStockPaging)
@@ -22,9 +23,12 @@ func InitRoute(app *gin.Engine) {
 		api.DELETE("/stockAll", controllers.DeleteAllStock)
 		api.DELETE("/stockById", controllers.DeleteStockById)
 		api.DELETE("/stockById2/:productId", controllers.DeleteStockById2)
+	}
 
-		api.POST("/file", controllers.HandleUploadFile)
-		api.DELETE("/file/:fileName", controllers.HadndleRemoveFile)
+	file := app.Group("/file", middleware.AuthMiddleware)
+	{
+		file.POST("/", controllers.HandleUploadFile)
+		file.DELETE("/:fileName", controllers.HadndleRemoveFile)
 	}
 }
 
