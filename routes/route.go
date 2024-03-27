@@ -24,6 +24,7 @@ func InitRoute(app *gin.Engine) {
 		api.DELETE("/stockById2/:productId", controllers.DeleteStockById2)
 
 		api.POST("/file", controllers.HandleUploadFile)
+		api.DELETE("/file/:fileName", controllers.HadndleRemoveFile)
 	}
 }
 
