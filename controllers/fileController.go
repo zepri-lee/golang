@@ -1,11 +1,8 @@
 package controllers
 
 import (
-	"fmt"
 	"gin-gonic-gorm/utils"
 	"net/http"
-	"path/filepath"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,20 +22,28 @@ func HandleUploadFile(ctx *gin.Context) {
 	// 	panic(errFile)
 	// }
 
-	extentionFile := filepath.Ext(fileHeader.Filename)
-	fmt.Println("extentionFile : " + extentionFile)
-	currentTime := time.Now().UTC().Format("20060101")
-	filename := fmt.Sprintf("%s-%s%s", currentTime, utils.RandomString(5), extentionFile)
-
-	errUpload := ctx.SaveUploadedFile(fileHeader, fmt.Sprintf("./public/files/%s", filename))
-	if errUpload != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"message": errUpload.Error(),
+	fileExtention := []string{".jpg", ".png"}
+	isFileExtentionValidated, extentionFile := utils.FileValidationByExtention(fileHeader, fileExtention)
+	if !isFileExtentionValidated {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "fileExtention is not validated",
 		})
 		return
 	}
+	fileType := []string{"image/jpg", "image/png"}
+	isFileValidated := utils.FileValidation(fileHeader, fileType)
+	if !isFileValidated {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "filetype is not validated",
+		})
+		return
+	}
+	filename := utils.RandomFileName(extentionFile, "")
+	isSaved := utils.SaveFile(ctx, fileHeader, filename)
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": "file uploaded.",
-	})
+	if isSaved {
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "file uploaded.",
+		})
+	}
 }
