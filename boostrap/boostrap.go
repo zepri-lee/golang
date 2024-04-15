@@ -15,7 +15,7 @@ func BoostrapApp() {
 	// 테이블 생성
 	database.Instance.AutoMigrate(&models.Stock{})
 	database.Instance.AutoMigrate(&models.Sale{})
-
+	// route
 	routes.InitRoute(app)
 
 	app.Run(config.PORT)
